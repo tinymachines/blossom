@@ -170,11 +170,13 @@ class TaskHarness:
                 result['compilation_failed'] = True
                 result['tests'] = [{'name': t['name'], 'passed': False, 'error': 'Compilation failed'} 
                                   for t in template['tests']]
+                result['success_rate'] = 0
                 return result
         elif template['language'] in ['bash', 'sh']:
             executable = self.prepare_bash(code, template)
         else:
             result['error'] = f"Unsupported language: {template['language']}"
+            result['success_rate'] = 0
             return result
         
         # Run tests
