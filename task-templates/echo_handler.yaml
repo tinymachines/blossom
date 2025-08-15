@@ -1,0 +1,38 @@
+# Task template for a simple echo handler
+name: echo_handler
+description: "reads lines from stdin and echoes them back with a prefix"
+language: c
+type: stream_processor
+
+# The task prompt for the LLM
+prompt: |
+  reads lines from stdin and echoes them back to stdout with '[ECHO] ' prefix.
+  Use fgets for input and handle EOF properly. Flush output after each line.
+
+# Build configuration
+build:
+  compiler: gcc
+  flags: ["-O2", "-Wall"]
+  output: echo_handler
+
+# Test cases
+tests:
+  - name: basic_echo
+    stdin: |
+      hello world
+      test message
+    expected_stdout: |
+      [ECHO] hello world
+      [ECHO] test message
+    timeout: 2
+
+  - name: empty_input
+    stdin: ""
+    expected_stdout: ""
+    timeout: 1
+
+# Optional constraints for code generation
+constraints:
+  max_lines: 50
+  required_includes: ["stdio.h"]
+  forbidden_functions: ["gets", "scanf"]

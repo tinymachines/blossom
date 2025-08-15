@@ -1,0 +1,42 @@
+# Task template for filtering numbers from input
+name: filter_numbers
+description: "filters and outputs only numeric values from mixed input"
+language: bash
+type: stream_processor
+
+prompt: |
+  reads lines from stdin and outputs only lines that contain exclusively numeric characters (0-9).
+  Should handle negative numbers and decimals. Use grep or sed for filtering.
+
+# No build needed for bash scripts
+build: null
+
+# Test cases
+tests:
+  - name: mixed_input
+    stdin: |
+      123
+      hello
+      456.789
+      -42
+      test123
+      999
+    expected_stdout: |
+      123
+      456.789
+      -42
+      999
+    timeout: 1
+
+  - name: no_numbers
+    stdin: |
+      hello
+      world
+      test
+    expected_stdout: ""
+    timeout: 1
+
+constraints:
+  max_lines: 20
+  required_commands: ["grep", "sed", "awk"]  # Any of these
+  shebang: "#!/bin/bash"

@@ -44,6 +44,13 @@ class PromptOptimizer:
             temperature=0.5,
             system_prompt="You help create simple Python handlers. Be concise."
         ),
+        'qwen3:1.7b': PromptStrategy(
+            model_name='qwen3:1.7b',
+            model_type='general',
+            max_tokens=1024,
+            temperature=0.5,
+            system_prompt="You help create simple Python handlers. Be concise."
+        ),
         'gemma3:1b': PromptStrategy(
             model_name='gemma3:1b',
             model_type='general',
@@ -68,7 +75,8 @@ class PromptOptimizer:
         
         strategy = self.STRATEGIES.get(model)
         if not strategy:
-            raise ValueError(f"Unknown model: {model}")
+            # Fallback strategy for unsupported models
+            strategy = self._get_fallback_strategy(model)
             
         # Load challenge description
         challenge_path = Path(__file__).parent.parent / 'challenges' / f'{challenge}.md'
@@ -240,3 +248,66 @@ Complete handler:
         template = template.replace('# Initialize any state here', '### ADD VARIABLES HERE (like: self.count = 0) ###')
         
         return template
+    
+    def _get_fallback_strategy(self, model: str) -> PromptStrategy:
+        """Create a fallback strategy for unsupported models"""
+        
+        # Determine model type from name heuristics
+        model_lower = model.lower()
+        if 'code' in model_lower or 'coder' in model_lower or 'deepseek' in model_lower:
+            model_type = 'code'
+            system_prompt = "You are a Python programmer. Write clean, working code for the Zephyr network handler system."
+            max_tokens = 2048
+        elif 'reason' in model_lower or 'think' in model_lower:
+            model_type = 'reasoning'
+            system_prompt = "Think step by step to create a working Zephyr network handler in Python."
+            max_tokens = 2048
+        else:
+            model_type = 'general'
+            system_prompt = "You are a helpful assistant. Create a Python handler for the Zephyr network following the given template."
+            max_tokens = 1536
+        
+        # Return fallback strategy
+        return PromptStrategy(
+            model_name=model,
+            model_type=model_type,
+            max_tokens=max_tokens,
+            temperature=0.4,  # Conservative temperature for unknown models
+            system_prompt=system_prompt
+        )
+    
+    def _build_universal_prompt(self, challenge: str, template: str, level: int) -> str:
+        """Build a universal prompt that works with any model"""
+        
+        requirements = self._extract_requirements(challenge)
+        test_cases = self._extract_test_cases(challenge)
+        
+        prompt = f"""Task: Create a Python handler for the Zephyr network system.
+
+Instructions:
+1. Modify the provided template to meet the requirements
+2. Keep all imports and class structure intact
+3. Focus on implementing the handle() and can_handle() methods
+4. Ensure the code is complete and working
+
+Template to modify:
+```python
+{template}
+```
+
+Requirements to implement:
+{requirements}
+
+Expected behavior (test cases):
+{test_cases}
+
+Rules:
+- Output must be valid Python code
+- Must inherit from base handler class
+- Must handle messages according to requirements
+- Include error handling where appropriate
+
+Generate the complete handler implementation:
+```python"""
+        
+        return prompt

@@ -1,0 +1,53 @@
+# Task template for a network packet counter
+name: packet_counter
+description: "counts different types of network messages from a stream"
+language: c
+type: stream_processor
+
+prompt: |
+  reads lines containing message types (format: "TYPE: data...").
+  Maintains counters for each message type seen. Every 10 messages,
+  outputs a summary like "STATS: heartbeat=3, chat=5, discovery=2".
+  Use static variables to maintain state. Handle up to 10 different types.
+
+build:
+  compiler: gcc
+  flags: ["-O2", "-Wall"]
+  output: packet_counter
+
+tests:
+  - name: count_messages
+    stdin: |
+      heartbeat: from node1
+      chat: hello world
+      heartbeat: from node2
+      discovery: peer found
+      chat: test message
+      heartbeat: from node3
+      chat: another message
+      discovery: new peer
+      heartbeat: from node4
+      chat: final message
+    expected_stdout: |
+      STATS: heartbeat=4, chat=4, discovery=2
+    timeout: 2
+
+  - name: single_type
+    stdin: |
+      ping: 1
+      ping: 2
+      ping: 3
+      ping: 4
+      ping: 5
+      ping: 6
+      ping: 7
+      ping: 8
+      ping: 9
+      ping: 10
+    expected_stdout: |
+      STATS: ping=10
+    timeout: 1
+
+constraints:
+  max_lines: 100
+  required_includes: ["stdio.h", "string.h", "stdlib.h"]

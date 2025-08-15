@@ -1,0 +1,50 @@
+# Task template for parsing structured messages
+name: message_parser
+description: "parses JSON-like messages and extracts specific fields"
+language: c
+type: stream_processor
+
+prompt: |
+  reads lines containing simple key:value pairs (like 'type:chat' or 'from:node1').
+  For each line, if it contains 'type:', extract and print just the value after 'type:'.
+  Handle malformed input gracefully. Use string.h functions.
+
+build:
+  compiler: gcc
+  flags: ["-O2", "-Wall", "-Wextra"]
+  output: message_parser
+
+tests:
+  - name: valid_messages
+    stdin: |
+      type:chat from:node1
+      type:heartbeat
+      random text
+      type:discovery peer:node2
+    expected_stdout: |
+      chat
+      heartbeat
+      discovery
+    timeout: 1
+
+  - name: no_type_field
+    stdin: |
+      from:node1
+      data:hello
+      peer:node2
+    expected_stdout: ""
+    timeout: 1
+
+  - name: edge_cases
+    stdin: |
+      type:
+      type:value:with:colons
+      TYPE:uppercase
+    expected_stdout: |
+      value:with:colons
+    timeout: 1
+
+constraints:
+  max_lines: 60
+  required_includes: ["stdio.h", "string.h"]
+  forbidden_functions: ["strtok"]  # Force manual parsing
